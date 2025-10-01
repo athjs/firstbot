@@ -28,17 +28,18 @@ AVG_SPEED = 180
 dxl_io = pypot.dynamixel.DxlIO(ports[0])
 dxl_io.set_wheel_mode([1, 2])  # active wheel mode sur les deux
 while True:
-    init_time = datetime.now()
+    init_time = time.time()
     ret, frame = cap.read()
     if not ret:
         print("Can't receive frame (stream end?). Exiting ...")
         break
     dX_ligne, dY_ligne, angle_ligne = cam.detect_lines_by_color(frame, cam.Color.Yellow)
-    Vl, Vo = ky.point_direction(dX_ligne, 2 * np.pi, np.pi)
+    Vl, Vo = ky.point_direction(dX_ligne, 20, np.pi / 4)
     Vd, Vg = ky.inverse_kinematics(Vl, Vo)
     dxl_io.set_moving_speed({1: -Vd, 2: Vg})
-    current_time = datetime.now()
-    time.sleep(1000 / 30 - (current_time - init_time))
+    current_time = time.time()
+    print(current_time - init_time)
+    time.sleep(1 / 30**-3 - (current_time - init_time))
 # try:
 #     coef_left = 1.0
 #     coef_right = 1.0

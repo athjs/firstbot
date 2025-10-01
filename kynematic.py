@@ -7,12 +7,13 @@ def direct_kinematics(Vd, Vg):
 def inverse_kinematics(Vl, Vo):
     Vd = (Vl - 41.25 * Vo) / 25
     Vg = (Vl + 41.25 * Vo) / 25
+    print(Vd, Vg)
     return (Vd, Vg)
 
 
 def point_direction(dx, kr, ka):
-    Vl = kr * (1 / dx)
-    Vo = ka * dx
+    Vl = kr
+    # normalise to the image size
+    Vo = ka * dx / 640
+    print(Vl, Vo)
     return (Vl, Vo)
-
-
