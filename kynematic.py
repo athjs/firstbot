@@ -5,8 +5,8 @@ def direct_kinematics(Vd, Vg):
 
 
 def inverse_kinematics(Vl, Vo):
-    Vd = (Vl - 41.25 * Vo) / 25
-    Vg = (Vl + 41.25 * Vo) / 25
+    Vd = (Vl - 41.25 * Vo)*180 / 25
+    Vg = (Vl + 41.25 * Vo)*180 / 25
     print(Vd, Vg)
     return (Vd, Vg)
 

@@ -39,7 +39,7 @@ while True:
     dxl_io.set_moving_speed({1: -Vd, 2: Vg})
     current_time = time.time()
     print(current_time - init_time)
-    time.sleep(1 / 30**-3 - (current_time - init_time))
+    time.sleep(1 / 30 - (current_time - init_time))
 # try:
 #     coef_left = 1.0
 #     coef_right = 1.0
