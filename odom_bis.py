@@ -128,6 +128,7 @@ def go_to(
     # orientation finale absolue (relative à theta initial)
     theta_goal = theta_target
     w = 0.8
+    v = 0.25
     try:
         # vecteur vers la cible
 
@@ -156,6 +157,34 @@ def go_to(
             current = time.time()   
         dxl_io.set_moving_speed({1: 0, 2: 0})
         # path.append((x, y, theta))
+        dt = dist_rest/v
+        # conversion Dynamixel
+        Vd, Vg = inverse_kinematics(v,0)
+        speed_d = rad_s_to_dxl_speed(Vd)
+        speed_g = rad_s_to_dxl_speed(Vg)
+        init = time.time()
+        current = time.time()   
+        dxl_io.set_moving_speed({1: -speed_d, 2: speed_g})  # roue droite  # roue gauche
+        while(current-init<dt):
+            current = time.time()   
+        dxl_io.set_moving_speed({1: 0, 2: 0})
+        # path.append((x, y, theta))
+        if (theta_goal - alpha) < 0 : 
+            theta_target = - theta_target-alpha
+        else: 
+            theta_goal = theta_target-alpha
+        dt = theta_goal/w
+        # conversion Dynamixel
+        Vd, Vg = inverse_kinematics(0)
+        speed_d = rad_s_to_dxl_speed(Vd)
+        speed_g = rad_s_to_dxl_speed(Vg)
+        # appliquer aux moteurs
+        init = time.time()
+        current = time.time()   
+        dxl_io.set_moving_speed({1: -speed_d, 2: speed_g})  # roue droite  # roue gauche
+        while(current-init<dt):
+            current = time.time()   
+        dxl_io.set_moving_speed({1: 0, 2: 0})
     finally: 
         dxl_io.set_moving_speed({1: 0, 2: 0})
     # arrêt moteur
