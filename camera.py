@@ -18,7 +18,7 @@ def open_usb_cam(dev="/dev/video0", w=640, h=480, fps=45):
     cap.set(cv.CAP_PROP_FPS, fps)
     return cap
 
-def detect_lines_by_color(img, color):
+def detect_lines_by_color(img, color, last_angle):
     # Conversion de l'image en espace de couleur HSV
     hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
 
@@ -70,7 +70,7 @@ def detect_lines_by_color(img, color):
 
     else:
         print("Aucun pixel détecté pour calculer le centroïde.")
-        angle, dY, dX = None, None, None
+        angle, dY, dX = last_angle, None, None
 
     # print(angle*180/math.pi)
     return [dX, dY, angle]
