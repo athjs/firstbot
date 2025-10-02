@@ -19,9 +19,18 @@ def dxl_speed_to_rad_s(value):
     Convertit la valeur brute Dynamixel (get_present_speed)
     en rad/s. (positif = CCW, négatif = CW)
     """
-    rpm = value * 0.916
-    rad_s = (rpm * 2 * math.pi) / 60.0
-    return rad_s
+    if value == 0 or value == 1024:  # stop
+        return 0.0
+
+    if value < 1024:  # CCW
+        rpm = value * 0.916
+        rad_s = (rpm * 2 * math.pi) / 60.0
+        return rad_s
+    else:  # CW
+        value = value - 1024
+        rpm = value * 0.916
+        rad_s = (rpm * 2 * math.pi) / 60.0
+        return -rad_s
 
 
 def rad_s_to_dxl_speed(rad_s, max_dxl=1023):
@@ -30,7 +39,14 @@ def rad_s_to_dxl_speed(rad_s, max_dxl=1023):
     """
     rpm = abs(rad_s) * 60.0 / (2 * math.pi)
     value = int(rpm / 0.916)
-    return value
+
+    if value > max_dxl:
+        value = max_dxl
+
+    if rad_s >= 0:  # CCW
+        return value
+    else:  # CW
+        return 1024 + value
 
 
 # -------------------------------
@@ -66,7 +82,7 @@ def direct_kinematics(Vd, Vg, R=WHEEL_RADIUS, W=WHEEL_BASE):
     return v, w
 
 
-def inverse_kinematics(v, w = 0.8, R=WHEEL_RADIUS, W=WHEEL_BASE):
+def inverse_kinematics(v, w ,R=WHEEL_RADIUS, W=WHEEL_BASE):
     v_r = v + (w * W) / 2.0
     v_l = v - (w * W) / 2.0
     Vd = v_r / R
@@ -108,6 +124,7 @@ def go_to(
     w = 1
     v = 1
     try:
+        print("cesar")
         # vecteur vers la cible
 
         x_rest = x_target 
@@ -117,17 +134,16 @@ def go_to(
 
         # angle relatif vers la cible
         alpha = math.atan2(y_rest, x_rest)
-
+        print(alpha)
         # erreur d'orientation
         # dtheta = theta_goal - theta
-
         # cinématique inverse
         Vd, Vg = inverse_kinematics(v,w)
         rotation_duration = np.abs(alpha/w)
         # conversion Dynamixel
         speed_d = rad_s_to_dxl_speed(Vd)
         speed_g = rad_s_to_dxl_speed(Vg)
-
+        print(Vd,Vg)
         # appliquer aux moteurs
         init = time.time()
 
@@ -139,12 +155,13 @@ def go_to(
         # path.append((x, y, theta))
         # conversion Dynamixel
         Vd, Vg = inverse_kinematics(v,0)
+        print(Vd,Vg)
         dt = dist_rest/(Vg*WHEEL_RADIUS)
         speed_d = rad_s_to_dxl_speed(Vd)
         speed_g = rad_s_to_dxl_speed(Vg)
         init = time.time()
         dxl_io.set_moving_speed({1: -speed_d, 2: speed_g})  # roue droite  # roue gauche
-        while(time.time() - init < rotation_duration):
+        while(time.time() - init < dt):
             continue
         dxl_io.set_moving_speed({1: 0, 2: 0})
                 # path.append((x, y, theta))
@@ -212,4 +229,4 @@ def odometry(x=0.0, y=0.0, theta=0.0, dt=0.1, duration=10.0):
     return x, y, theta, path
 
 
-go_to(1, 0, 0)
+go_to(1,-1, 0)
