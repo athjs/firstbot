@@ -87,9 +87,6 @@ def go_to(
     x_target,
     y_target,
     theta_target,
-    x=0.0,
-    y=0.0,
-    theta=0.0,
 ):
     """
     Fait aller le robot de (x,y,theta) vers (x_target, y_target, theta_target)
@@ -108,14 +105,13 @@ def go_to(
     dxl_io.set_wheel_mode([1, 2])
 
     # orientation finale absolue (relative à theta initial)
-    theta_goal = theta_target
-    w = 0.8
-    v = 0.25
+    w = 1
+    v = 1
     try:
         # vecteur vers la cible
 
-        x_rest = x_target - x
-        y_rest = y_target - y
+        x_rest = x_target 
+        y_rest = y_target 
         dist_rest = math.hypot(x_rest, y_rest)
 
 
@@ -126,18 +122,19 @@ def go_to(
         # dtheta = theta_goal - theta
 
         # cinématique inverse
-        Vd, Vg = inverse_kinematics(0)
-        dt = alpha/w
+        Vd, Vg = inverse_kinematics(v,w)
+        rotation_duration = np.abs(alpha/w)
         # conversion Dynamixel
         speed_d = rad_s_to_dxl_speed(Vd)
         speed_g = rad_s_to_dxl_speed(Vg)
 
         # appliquer aux moteurs
         init = time.time()
-        current = time.time()   
+
+        # appliquer aux moteurs 
         dxl_io.set_moving_speed({1: -speed_d, 2: speed_g})  # roue droite  # roue gauche
-        while(current-init<dt):
-            current = time.time()   
+        while(time.time() - init < rotation_duration):
+            continue   
         dxl_io.set_moving_speed({1: 0, 2: 0})
         # path.append((x, y, theta))
         # conversion Dynamixel
@@ -146,34 +143,34 @@ def go_to(
         speed_d = rad_s_to_dxl_speed(Vd)
         speed_g = rad_s_to_dxl_speed(Vg)
         init = time.time()
-        current = time.time()   
         dxl_io.set_moving_speed({1: -speed_d, 2: speed_g})  # roue droite  # roue gauche
-        while(current-init<dt):
-            current = time.time()   
+        while(time.time() - init < rotation_duration):
+            continue
         dxl_io.set_moving_speed({1: 0, 2: 0})
-        # path.append((x, y, theta))
-        if (theta_goal - alpha) < 0 : 
-            theta_target = - theta_target-alpha
-        else: 
-            theta_goal = theta_target-alpha
-        dt = theta_goal/w
+                # path.append((x, y, theta))
+        theta_target = theta_target-alpha
+        # erreur d'orientation
+        # dtheta = theta_goal - theta
+        # cinématique inverse
+        Vd, Vg = inverse_kinematics(v,w)
+        rotation_duration = np.abs(theta_target/w)
         # conversion Dynamixel
-        Vd, Vg = inverse_kinematics(0)
         speed_d = rad_s_to_dxl_speed(Vd)
         speed_g = rad_s_to_dxl_speed(Vg)
+        if theta_target-alpha<0: 
+            w = -w
         # appliquer aux moteurs
         init = time.time()
-        current = time.time()   
         dxl_io.set_moving_speed({1: -speed_d, 2: speed_g})  # roue droite  # roue gauche
-        while(current-init<dt):
-            current = time.time()   
+        while(time.time() - init < rotation_duration):
+            continue
         dxl_io.set_moving_speed({1: 0, 2: 0})
     finally: 
         dxl_io.set_moving_speed({1: 0, 2: 0})
     # arrêt moteur
     dxl_io.set_moving_speed({1: 0, 2: 0})
 
-    return x, y, theta, path
+    return
 
 
 def odometry(x=0.0, y=0.0, theta=0.0, dt=0.1, duration=10.0):
@@ -215,4 +212,4 @@ def odometry(x=0.0, y=0.0, theta=0.0, dt=0.1, duration=10.0):
     return x, y, theta, path
 
 
-go_to(-1, 0, 0)
+go_to(1, 0, 0)
