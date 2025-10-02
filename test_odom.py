@@ -1,16 +1,16 @@
 import math
 import numpy as np
 import pypot.dynamixel
-import kynematic as ky   # tes fonctions cinématiques
+import kynematic as ky  # tes fonctions cinématiques
 import time as time
 
 # -------------------------------
 # Paramètres robot
 # -------------------------------
-WHEEL_RADIUS = 0.025   # m (rayon roue = 2.5 cm)
-WHEEL_BASE   = 0.185   # m (distance entre roues = 18.5 cm)
-MAX_V = 0.25           # m/s (avance max)
-MAX_W = 2.0            # rad/s (rotation max)
+WHEEL_RADIUS = 0.025  # m (rayon roue = 2.5 cm)
+WHEEL_BASE = 0.185  # m (distance entre roues = 18.5 cm)
+MAX_V = 0.25  # m/s (avance max)
+MAX_W = 2.0  # rad/s (rotation max)
 
 
 # -------------------------------
@@ -28,12 +28,11 @@ def dxl_speed_to_rad_s(value):
         rpm = value * 0.916
         rad_s = (rpm * 2 * math.pi) / 60.0
         return rad_s
-    else:             # CW
+    else:  # CW
         value = value - 1024
         rpm = value * 0.916
         rad_s = (rpm * 2 * math.pi) / 60.0
         return -rad_s
-
 
 
 def rad_s_to_dxl_speed(rad_s, max_dxl=1023):
@@ -48,9 +47,8 @@ def rad_s_to_dxl_speed(rad_s, max_dxl=1023):
 
     if rad_s >= 0:  # CCW
         return value
-    else:           # CW
+    else:  # CW
         return 1024 + value
-
 
 
 # -------------------------------
@@ -96,16 +94,24 @@ def inverse_kinematics(v, w, R=WHEEL_RADIUS, W=WHEEL_BASE):
 
 def point_direction(alpha, v_base=0.15, ka=0.8):
     v = v_base
-    w = -ka * alpha   # correction proportionnelle à l'angle
+    w = -ka * alpha  # correction proportionnelle à l'angle
     return v, w
 
 
 # -------------------------------
 # Fonction go_to principale
 # -------------------------------
-def go_to(x_target, y_target, theta_target,
-          x=0.0, y=0.0, theta=0.0,
-          dt=0.1, tol_pos=0.01, tol_theta=0.05):
+def go_to(
+    x_target,
+    y_target,
+    theta_target,
+    x=0.0,
+    y=0.0,
+    theta=0.0,
+    dt=0.1,
+    tol_pos=0.01,
+    tol_theta=0.05,
+):
     """
     Fait aller le robot de (x,y,theta) vers (x_target, y_target, theta_target)
     Les coordonnées (x,y) sont exprimées dans le repère monde :
@@ -118,59 +124,57 @@ def go_to(x_target, y_target, theta_target,
     # --- initialisation Dynamixel ---
     ports = pypot.dynamixel.get_available_ports()
     if not ports:
-        exit('No Dynamixel port found')
+        exit("No Dynamixel port found")
     dxl_io = pypot.dynamixel.DxlIO(ports[0])
     dxl_io.set_wheel_mode([1, 2])
 
     # orientation finale absolue (relative à theta initial)
-    theta_goal = theta + theta_target
+    theta_goal = theta_target
+    try:
+        while True:
+            # vecteur vers la cible
+            x_rest = x_target - x
+            y_rest = y_target - y
+            dist_rest = math.hypot(x_rest, y_rest)
 
-    while True:
-        # vecteur vers la cible
-        x_rest = x_target - x
-        y_rest = y_target - y
-        dist_rest = math.hypot(x_rest, y_rest)
+            # angle relatif vers la cible
+            alpha = math.atan2(y_rest, x_rest)
 
-        # angle relatif vers la cible
-        alpha = math.atan2(y_rest, x_rest) - theta
-        alpha = (alpha + math.pi) % (2 * math.pi) - math.pi
+            # erreur d'orientation
+            # dtheta = theta_goal - theta
 
-        # erreur d'orientation
-        dtheta = (theta_goal - theta + math.pi) % (2 * math.pi) - math.pi
+            # condition d’arrêt
+            if dist_rest < tol_pos :
+                #and abs(dtheta) < tol_theta:
+                break
 
-        # condition d’arrêt
-        if dist_rest < tol_pos and abs(dtheta) < tol_theta:
-            break
+            # commande vitesse (v, w)
+            v, w = point_direction(alpha)
 
-        # commande vitesse (v, w)
-        v, w = point_direction(alpha)
+            # ralentissement quand proche
+            if dist_rest < 0.2:
+                v *= dist_rest / 0.2
 
-        # ralentissement quand proche
-        if dist_rest < 0.2:
-            v *= dist_rest / 0.2
+            # cinématique inverse
+            Vd, Vg = inverse_kinematics(v, w)
 
-        # cinématique inverse
-        Vd, Vg = inverse_kinematics(v, w)
+            # conversion Dynamixel
+            speed_d = rad_s_to_dxl_speed(Vd)
+            speed_g = rad_s_to_dxl_speed(Vg)
 
-        # conversion Dynamixel
-        speed_d = rad_s_to_dxl_speed(Vd)
-        speed_g = rad_s_to_dxl_speed(Vg)
+            # appliquer aux moteurs
+            dxl_io.set_moving_speed({1: -speed_d, 2: speed_g})  # roue droite  # roue gauche
 
-        # appliquer aux moteurs
-        dxl_io.set_moving_speed({
-            1: -speed_d,   # roue droite
-            2: speed_g    # roue gauche
-        })
+            # vitesses réelles
+            Vd_real, Vg_real = dxl_io.get_present_speed({1, 2})
 
-        # vitesses réelles
-        Vd_real , Vg_real = dxl_io.get_present_speed({1,2})
+            # mise à jour odométrie
+            v_real, w_real = direct_kinematics(Vd_real, Vg_real)
+            x, y, theta = tick_odom(x, y, theta, v_real, w_real, dt)
 
-        # mise à jour odométrie
-        v_real, w_real = direct_kinematics(Vd_real, Vg_real)
-        x, y, theta = tick_odom(x, y, theta, v_real, w_real, dt)
-
-        path.append((x, y, theta))
-
+            path.append((x, y, theta))
+    finally: 
+        dxl_io.set_moving_speed({1: 0, 2: 0})
     # arrêt moteur
     dxl_io.set_moving_speed({1: 0, 2: 0})
 
@@ -181,11 +185,11 @@ def odometry(x=0.0, y=0.0, theta=0.0, dt=0.1, duration=10.0):
     """
     Mesure la position finale du robot en utilisant l’odométrie,
     en le déplaçant à la main (moteurs en roue libre).
-    
+
     - (x, y, theta) : position initiale
     - dt : pas de temps pour mise à jour
     - duration : temps total d’échantillonnage (s)
-    
+
     Retourne : (x, y, theta, path)
     """
     path = []
@@ -193,9 +197,9 @@ def odometry(x=0.0, y=0.0, theta=0.0, dt=0.1, duration=10.0):
     # --- initialisation Dynamixel ---
     ports = pypot.dynamixel.get_available_ports()
     if not ports:
-        exit('No Dynamixel port found')
+        exit("No Dynamixel port found")
     dxl_io = pypot.dynamixel.DxlIO(ports[0])
-    dxl_io.set_wheel_mode([1, 2])   # mode roue (free wheeling si pas de commande)
+    dxl_io.set_wheel_mode([1, 2])  # mode roue (free wheeling si pas de commande)
 
     t = 0.0
     while t < duration:
@@ -216,4 +220,4 @@ def odometry(x=0.0, y=0.0, theta=0.0, dt=0.1, duration=10.0):
     return x, y, theta, path
 
 
-go_to(2,0,0)
+go_to(2, 0, 0)
