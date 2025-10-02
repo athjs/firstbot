@@ -70,8 +70,6 @@ def test_directkinematics():
         
 
 
-
-
 def test_go_to(): 
     x, y, theta, path = go_to(250, 0, 0)
     print(x,y, theta, path)
