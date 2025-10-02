@@ -11,14 +11,21 @@ from camera import detect_lines_brown
 from camera import Color
 from kynematic import *
 
-# --- paramètres robot ---
+# paramètres robot
 WHEEL_RADIUS = 0.025   # m (rayon roue = 2.5 cm)
 WHEEL_BASE   = 0.185   # m (distance entre roues = 18.5 cm)
 MAX_V = 0.25           # m/s (avance max)
 MAX_W = 2.0            # rad/s (rotation max)
 
+# codes couleur pour l'affichage
+ANSI_CODE = {
+    Color.Yellow: "\033[33m",
+    Color.Blue:   "\033[34m",
+    Color.Red:    "\033[31m",
+}
+RESET = "\033[0m"
 
-# --- initialisation caméra ---
+# initialisation caméra 
 def open_usb_cam(dev="/dev/video0", w=640, h=480, fps=30):
     cap = cv.VideoCapture(dev, cv.CAP_V4L2)
     cap.set(cv.CAP_PROP_FRAME_WIDTH, w)
@@ -26,21 +33,23 @@ def open_usb_cam(dev="/dev/video0", w=640, h=480, fps=30):
     cap.set(cv.CAP_PROP_FPS, fps)
     return cap
 
+# ouverture de la cam
 cap = open_usb_cam()
 if not cap.isOpened():
     print("Cannot open camera")
     exit()
 
-# --- initialisation Dynamixel ---
+# initialisation Dynamixel 
 ports = pypot.dynamixel.get_available_ports()
 if not ports:
     exit('No Dynamixel port found')
 dxl_io = pypot.dynamixel.DxlIO(ports[0])
 dxl_io.set_wheel_mode([1, 2])   # active wheel mode sur les deux
 
+# init des variables de la boucle
 last_angle = 0
-color_choice = Color.Blue
-
+color_choice = Color.Yellow
+color_code = ANSI_CODE[color_choice]
 try:
     last_brown_detection_time = time.time() 
     while True:
@@ -50,15 +59,16 @@ try:
             break
 
         #détection du marron pour changement de couleur 
-        print(color_choice)
+        print(color_code, color_choice, RESET)
         # Si t'as pas detecté de marron depuis + de 20s, teste si y'a du marron sur la frame. 
-        if time.time() - last_brown_detection_time > 20:
+        if time.time() - last_brown_detection_time > 10:
             if detect_lines_brown(img=frame, seuil=0.10):
                 brown_detection_time = time.time()
 
                 color_choice = Color(color_choice.value + 1)    
-                print("Marron détecté à", brown_detection_time, ", Passage au : ", color_choice)
-            
+                color_code = ANSI_CODE[color_choice]
+                print("\033[38;2;255;165;0mTexte orange\033[0m","Marron détecté à", brown_detection_time, color_code, " \nPassage au : ", color_choice, )
+
                 last_brown_detection_time = brown_detection_time
             else :
                 print ("Pas de Marron detecté")
