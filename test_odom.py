@@ -18,32 +18,37 @@ MAX_W = 2.0            # rad/s (rotation max)
 # -------------------------------
 def dxl_speed_to_rad_s(value):
     """
-    Convertit la valeur renvoyée par Dynamixel (get_present_speed)
-    en rad/s. (positif = anti-horaire, négatif = horaire)
+    Convertit la valeur brute Dynamixel (get_present_speed)
+    en rad/s. (positif = CCW, négatif = CW)
     """
-    direction = 1
-    if value > 1023:  # bit de signe
+    if value == 0 or value == 1024:  # stop
+        return 0.0
+
+    if value < 1024:  # CCW
+        rpm = value * 0.916
+        rad_s = (rpm * 2 * math.pi) / 60.0
+        return rad_s
+    else:             # CW
         value = value - 1024
-        direction = -1
-    
-    rpm = value * 0.111            # en tours/min
-    rad_s = (rpm * 2 * math.pi) / 60.0
-    return direction * rad_s
+        rpm = value * 0.916
+        rad_s = (rpm * 2 * math.pi) / 60.0
+        return -rad_s
 
 
-def rad_s_to_dxl_speed(rad_s, max_lin_speed=0.7, wheel_radius=WHEEL_RADIUS, max_dxl=1023):
+
+def rad_s_to_dxl_speed(rad_s, max_dxl=1023):
     """
-    Conversion rad/s -> unité Dynamixel (approximation linéaire).
+    Conversion rad/s -> unité Dynamixel (0–2047).
     """
-    max_rad_s = max_lin_speed / wheel_radius
-    value = int((abs(rad_s) / max_rad_s) * max_dxl)
+    rpm = abs(rad_s) * 60.0 / (2 * math.pi)
+    value = int(rpm / 0.916)
+
     if value > max_dxl:
         value = max_dxl
-    
-    # encode direction : 0-1023 sens horaire, 1024-2047 sens antihoraire
-    if rad_s >= 0:
+
+    if rad_s >= 0:  # CCW
         return value
-    else:
+    else:           # CW
         return 1024 + value
 
 
