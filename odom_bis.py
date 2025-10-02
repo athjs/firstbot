@@ -9,8 +9,6 @@ import time as time
 # -------------------------------
 WHEEL_RADIUS = 0.025  # m (rayon roue = 2.5 cm)
 WHEEL_BASE = 0.185  # m (distance entre roues = 18.5 cm)
-MAX_V = 0.25  # m/s (avance max)
-MAX_W = 2.0  # rad/s (rotation max)
 
 
 # -------------------------------
@@ -21,18 +19,9 @@ def dxl_speed_to_rad_s(value):
     Convertit la valeur brute Dynamixel (get_present_speed)
     en rad/s. (positif = CCW, négatif = CW)
     """
-    if value == 0 or value == 1024:  # stop
-        return 0.0
-
-    if value < 1024:  # CCW
-        rpm = value * 0.916
-        rad_s = (rpm * 2 * math.pi) / 60.0
-        return rad_s
-    else:  # CW
-        value = value - 1024
-        rpm = value * 0.916
-        rad_s = (rpm * 2 * math.pi) / 60.0
-        return -rad_s
+    rpm = value * 0.916
+    rad_s = (rpm * 2 * math.pi) / 60.0
+    return rad_s
 
 
 def rad_s_to_dxl_speed(rad_s, max_dxl=1023):
@@ -41,14 +30,7 @@ def rad_s_to_dxl_speed(rad_s, max_dxl=1023):
     """
     rpm = abs(rad_s) * 60.0 / (2 * math.pi)
     value = int(rpm / 0.916)
-
-    if value > max_dxl:
-        value = max_dxl
-
-    if rad_s >= 0:  # CCW
-        return value
-    else:  # CW
-        return 1024 + value
+    return value
 
 
 # -------------------------------
@@ -136,6 +118,7 @@ def go_to(
         y_rest = y_target - y
         dist_rest = math.hypot(x_rest, y_rest)
 
+
         # angle relatif vers la cible
         alpha = math.atan2(y_rest, x_rest)
 
@@ -157,9 +140,9 @@ def go_to(
             current = time.time()   
         dxl_io.set_moving_speed({1: 0, 2: 0})
         # path.append((x, y, theta))
-        dt = dist_rest/v
         # conversion Dynamixel
         Vd, Vg = inverse_kinematics(v,0)
+        dt = dist_rest/(Vg*WHEEL_RADIUS)
         speed_d = rad_s_to_dxl_speed(Vd)
         speed_g = rad_s_to_dxl_speed(Vg)
         init = time.time()
