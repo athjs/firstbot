@@ -63,6 +63,8 @@ def detect_lines_by_color(img, color, last_angle):
         cY = int(M["m01"] / M["m00"])
         print(f"Centroïde : ({cX}, {cY})")
         height, width = img.shape[:2]
+        if mask == red_mask:
+            width -= 120
         centre = width / 2
         angle = math.atan2(cX - centre, height - cY)
         dX = cX - centre
