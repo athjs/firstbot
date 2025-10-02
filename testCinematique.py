@@ -11,12 +11,6 @@ from camera import detect_lines_brown
 from camera import Color
 from kynematic import *
 
-# paramètres robot
-WHEEL_RADIUS = 0.025   # m (rayon roue = 2.5 cm)
-WHEEL_BASE   = 0.185   # m (distance entre roues = 18.5 cm)
-MAX_V = 0.25           # m/s (avance max)
-MAX_W = 2.0            # rad/s (rotation max)
-
 # codes couleur pour l'affichage
 ANSI_CODE = {
     Color.Yellow: "\033[33m",
@@ -80,9 +74,19 @@ try:
         dX, dY, angle = result
         if angle is None:
             continue
+        
+        if color_choice == Color.Red :
+            v_base = 0.1
+            ka = 1.4
+        elif color_choice == Color.Blue :
+            v_base = 0.20
+            ka = 1.2
+        else: 
+            v_base = 0.25
+            ka = 0.8
 
         # génération commande (v, w) à partir de l’angle
-        v, w = point_direction(angle)
+        v, w = point_direction(angle, v_base, ka)
 
         # cinématique inverse -> vitesses roues (rad/s)
         Vd, Vg = inverse_kinematics(v, w)
@@ -106,7 +110,7 @@ try:
 
         last_angle=angle
 
-        time.sleep(0.01)
+        #time.sleep(0.01)
 
 except KeyboardInterrupt:
     print("Ctrl+C détecté, arrêt…")
