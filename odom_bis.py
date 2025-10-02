@@ -138,7 +138,7 @@ def go_to(
         # erreur d'orientation
         # dtheta = theta_goal - theta
         # cinématique inverse
-        Vd, Vg = inverse_kinematics(v,w)
+        Vd, Vg = inverse_kinematics(0,w)
         rotation_duration = np.abs(alpha/w)
         # conversion Dynamixel
         speed_d = rad_s_to_dxl_speed(Vd)
@@ -169,7 +169,7 @@ def go_to(
         # erreur d'orientation
         # dtheta = theta_goal - theta
         # cinématique inverse
-        Vd, Vg = inverse_kinematics(v,w)
+        Vd, Vg = inverse_kinematics(0,w)
         rotation_duration = np.abs(theta_target/w)
         # conversion Dynamixel
         speed_d = rad_s_to_dxl_speed(Vd)
@@ -211,9 +211,10 @@ def odometry(x=0.0, y=0.0, theta=0.0, dt=0.1, duration=10.0):
     dxl_io.set_wheel_mode([1, 2])  # mode roue (free wheeling si pas de commande)
 
     t = 0.0
+    print("trajet démarré")
     while t < duration:
         # lire vitesses roues en rad/s
-        Vd_real, Vg_real = dxl_io.get_present_speed(dxl_io, [1, 2])
+        Vd_real, Vg_real = dxl_io.get_present_speed([1, 2])
 
         # convertir en (v, w)
         v_real, w_real = direct_kinematics(Vd_real, Vg_real)
@@ -229,4 +230,4 @@ def odometry(x=0.0, y=0.0, theta=0.0, dt=0.1, duration=10.0):
     return x, y, theta, path
 
 
-go_to(1,-1, 0)
+print(odometry())
