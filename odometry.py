@@ -36,7 +36,7 @@ def tick_odom(x, y, theta, v, w, dt):
 
 import math
 
-def go_to(x_target, y_target, alpha_target,
+def go_to(x_target, y_target, theta_target,
           x=0.0, y=0.0, theta=0.0,
           dt=0.1, tol_pos=0.01, tol_theta=0.05):
     """
@@ -46,31 +46,57 @@ def go_to(x_target, y_target, alpha_target,
     tol_theta : tolérance orientation (rad)
     """
     path = []  # pour stocker la trajectoire
+
+    # --- initialisation Dynamixel ---
+    ports = pypot.dynamixel.get_available_ports()
+    if not ports:
+        exit('No Dynamixel port found')
+    dxl_io = pypot.dynamixel.DxlIO(ports[0])
+    dxl_io.set_wheel_mode([1, 2])   # active wheel mode sur les deux
     
     while True:
         # vecteur vers cible
-        dx = x_target - x
-        dy = y_target - y
-        dist = math.hypot(dx, dy)
+        x_rest = x_target - x
+        y_rest = y_target - y
+        dist_rest = math.hypot(x_rest, y_rest)
 
         # angle vers la cible
-        alpha = math.atan2(dy, dx) - theta
+        alpha = math.atan2(y_rest, x_rest) - theta
         # normalisation entre -pi et pi
         alpha = (alpha + math.pi) % (2 * math.pi) - math.pi
 
         # arrêt si proche de la cible
-        if dist < tol_pos and abs(alpha_target - theta) < tol_theta:
+        if dist_rest < tol_pos and abs(theta_target - theta) < tol_theta:
             break
 
         # calcul des vitesses linéaire et angulaire
-        v, w = ky.point_direction(alpha)
+        v, w = ky.point_direction(math.pi - alpha)
+
+        # cinématique inverse -> vitesses roues (rad/s)
+        Vd, Vg = ky.inverse_kinematics(v, w)
+
+        # conversion Dynamixel
+        speed_d = ky.rad_s_to_dxl_speed(Vd)
+        speed_g = ky.rad_s_to_dxl_speed(Vg)
+
+        #print(f"alpha={angle:.3f} rad | cmd: v={v:.2f}, w={w:.2f} "
+         #     f"| roues: Vd={Vd:.2f}, Vg={Vg:.2f} rad/s "
+          #    f"| estimé: v={v_est:.2f}, w={w_est:.2f}")
+
+        # appliquer aux moteurs
+        dxl_io.set_moving_speed({
+            1: -speed_d,  # moteur gauche
+            2:  speed_g  # moteur droit
+        })
+
+        Vd_real , Vg_real = get_present_speed({1,2})
 
         # saturation vitesse si on est proche de la cible
-        if dist < 0.2:
-            v *= dist / 0.2  # ralentir progressivement
+        if dist_rest < 0.2:
+            v *= dist_rest / 0.2  # ralentir progressivement
 
         # vitesses roues
-        Vd, Vg = ky.inverse_kinematics(v, w)
+        v, w = ky.direct_kinematics(Vd_real, Vg_real)
 
         # ici on pourrait convertir en Dynamixel : rad_s_to_dxl_speed(Vd), rad_s_to_dxl_speed(Vg)
         # mais pour simulation, on applique directement odométrie
@@ -80,6 +106,3 @@ def go_to(x_target, y_target, alpha_target,
 
     return x, y, theta, path
 
-# --- Exemple ---
-x_final, y_final, theta_final, path = go_to(1.0, 1.0, 0.0)
-print(f"x={x_final:.3f}, y={y_final:.3f}, theta={theta_final:.3f}")
