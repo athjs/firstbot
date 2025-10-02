@@ -95,7 +95,7 @@ try:
             continue
 
         # génération commande (v, w) à partir de l’angle
-        v, w = point_direction(angle, v_base=0.15, ka=0.8)
+        v, w = point_direction(angle, v_base=0.20, ka=0.8)
 
         # cinématique inverse -> vitesses roues (rad/s)
         Vd, Vg = inverse_kinematics(v, w)
@@ -107,14 +107,14 @@ try:
         speed_d = rad_s_to_dxl_speed(Vd)
         speed_g = rad_s_to_dxl_speed(Vg)
 
-        print(f"alpha={angle:.3f} rad | cmd: v={v:.2f}, w={w:.2f} "
-              f"| roues: Vd={Vd:.2f}, Vg={Vg:.2f} rad/s "
-              f"| estimé: v={v_est:.2f}, w={w_est:.2f}")
+        #print(f"alpha={angle:.3f} rad | cmd: v={v:.2f}, w={w:.2f} "
+         #     f"| roues: Vd={Vd:.2f}, Vg={Vg:.2f} rad/s "
+          #    f"| estimé: v={v_est:.2f}, w={w_est:.2f}")
 
         # appliquer aux moteurs
         dxl_io.set_moving_speed({
-            1: -speed_g,  # moteur gauche
-            2:  speed_d   # moteur droit
+            1: -speed_d,  # moteur gauche
+            2:  speed_g  # moteur droit
         })
 
         last_angle=angle
