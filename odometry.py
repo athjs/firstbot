@@ -1,6 +1,9 @@
+import pypot.dynamixel
 import numpy as np
 import math
 import kynematic as ky
+import time as time
+import numpy as np
 
 def odom(v, w, dt):
     """
@@ -59,9 +62,9 @@ def go_to(x_target, y_target, theta_target,
         x_rest = x_target - x
         y_rest = y_target - y
         dist_rest = math.hypot(x_rest, y_rest)
-
         # angle vers la cible
         alpha = math.atan2(y_rest, x_rest) - theta
+        print("alpha",alpha)
         # normalisation entre -pi et pi
         alpha = (alpha + math.pi) % (2 * math.pi) - math.pi
 
@@ -70,11 +73,10 @@ def go_to(x_target, y_target, theta_target,
             break
 
         # calcul des vitesses linéaire et angulaire
-        v, w = ky.point_direction(math.pi - alpha)
-
+        v, w = ky.point_direction(alpha)
         # cinématique inverse -> vitesses roues (rad/s)
         Vd, Vg = ky.inverse_kinematics(v, w)
-
+        Vd, Vg = Vd*180/np.pi, Vg*180/np.pi
         # conversion Dynamixel
         speed_d = ky.rad_s_to_dxl_speed(Vd)
         speed_g = ky.rad_s_to_dxl_speed(Vg)
@@ -88,8 +90,9 @@ def go_to(x_target, y_target, theta_target,
             1: -speed_d,  # moteur gauche
             2:  speed_g  # moteur droit
         })
-
+        time.sleep(0.1)
         Vd_real , Vg_real = dxl_io.get_present_speed({1,2})
+        print(Vd_real, Vg_real)
 
         # saturation vitesse si on est proche de la cible
         if dist_rest < 0.2:

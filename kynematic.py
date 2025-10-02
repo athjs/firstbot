@@ -25,8 +25,8 @@ def inverse_kinematics(v, w, R=WHEEL_RADIUS, W=WHEEL_BASE):
     v_l = v - (w * W) / 2.0
     Vd = v_r / R
     Vg = v_l / R
-    return Vd, Vg
-
+    #print("Vitesse moteur gauches et droit",Vd,Vg)
+    return Vd,Vg
 def point_direction(alpha, v_base=0.15, ka=0.8, max_v=MAX_V, max_w=MAX_W):
     """
     alpha : angle (rad) entre -pi/2 et pi/2

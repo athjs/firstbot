@@ -39,7 +39,6 @@ def detect_lines_by_color(img, color, last_angle):
 
     lower_marron = np.array([115, 5, 70])  # H, S, V min
     upper_marron = np.array([150, 40, 150])  # H, S, V max
-    marron_mask = cv.inRange(hsv, lower_marron, upper_marron)
 
     match color:
         case Color.Yellow:
@@ -48,8 +47,6 @@ def detect_lines_by_color(img, color, last_angle):
             mask = blue_mask
         case Color.Red:
             mask = red_mask
-        case Color.Brown:
-            mask = marron_mask
         case _:
             mask = yellow_mask
 
@@ -78,30 +75,21 @@ def detect_lines_by_color(img, color, last_angle):
     return [dX, dY, angle]
 
 
-def detect_lines_brown(img):
-    # Conversion de l'image en espace de couleur HSV
+# --- Plages MARRON (tolérantes) en HSV OpenCV ---
+lower_brown_1 = np.array([  0,   8,  56], dtype=np.uint8)
+upper_brown_1 = np.array([  4, 140, 140], dtype=np.uint8)
+lower_brown_2 = np.array([147,   8,  56], dtype=np.uint8)
+upper_brown_2 = np.array([178, 140, 140], dtype=np.uint8)
+
+def detect_lines_brown(img, seuil=0.35):
     hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
-
-    lower_marron = np.array([115, 5, 70])  # H, S, V min
-    upper_marron = np.array([150, 40, 150])  # H, S, V max
-    marron_mask = cv.inRange(hsv, lower_marron, upper_marron)
-
-    # Appliquer le masque à l'image originale
+    marron_mask = cv.bitwise_or(cv.inRange(hsv, lower_brown_1, upper_brown_1),
+                                cv.inRange(hsv, lower_brown_2, upper_brown_2))
     result = cv.bitwise_and(img, img, mask=marron_mask)
-
-    # Calcul du centroïde
-    M = cv.moments(marron_mask)  # moments géométriques
-    if M["m00"] >= 40000:
-        cX = int(M["m10"] / M["m00"])
-        cY = int(M["m01"] / M["m00"])
-        #print(f"Centroïde : ({cX}, {cY})")
-        height, width = img.shape[:2]
-        dY = height - cY
-        if dY >= 3/4 * height:
-            return True
-        else :
-            return False
-
-    else:
-        print("Aucun pixel détecté pour calculer le centroïde.")
+    ratio = np.count_nonzero(marron_mask) / marron_mask.size
+    if ratio >= seuil:
+        print( "Pourcentage de MarronMask : ", ratio)
+        return True
+    else: 
         return False
+    
