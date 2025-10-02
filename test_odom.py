@@ -209,3 +209,6 @@ def odometry(x=0.0, y=0.0, theta=0.0, dt=0.1, duration=10.0):
         t += dt
 
     return x, y, theta, path
+
+
+go_to(2,0,0)
