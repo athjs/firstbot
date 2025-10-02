@@ -89,7 +89,7 @@ def go_to(x_target, y_target, theta_target,
             2:  speed_g  # moteur droit
         })
 
-        Vd_real , Vg_real = get_present_speed({1,2})
+        Vd_real , Vg_real = dxl_io.get_present_speed({1,2})
 
         # saturation vitesse si on est proche de la cible
         if dist_rest < 0.2:
