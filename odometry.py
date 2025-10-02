@@ -70,7 +70,7 @@ def go_to(x_target, y_target, theta_target,
             break
 
         # calcul des vitesses linéaire et angulaire
-        v, w = ky.point_direction(math.pi - alpha)
+        v, w = ky.point_direction(alpha)
 
         # cinématique inverse -> vitesses roues (rad/s)
         Vd, Vg = ky.inverse_kinematics(v, w)
