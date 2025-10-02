@@ -61,10 +61,10 @@ def detect_lines_by_color(img, color, last_angle):
     if M["m00"] != 0:
         cX = int(M["m10"] / M["m00"])
         cY = int(M["m01"] / M["m00"])
-        print(f"Centroïde : ({cX}, {cY})")
+        #print(f"Centroïde : ({cX}, {cY})")
         height, width = img.shape[:2]
-        if mask == red_mask:
-            width -= 120
+        """ if mask == red_mask:
+            width -= 120 """
         centre = width / 2
         angle = math.atan2(cX - centre, height - cY)
         dX = cX - centre
@@ -94,7 +94,7 @@ def detect_lines_brown(img):
     if M["m00"] >= 40000:
         cX = int(M["m10"] / M["m00"])
         cY = int(M["m01"] / M["m00"])
-        print(f"Centroïde : ({cX}, {cY})")
+        #print(f"Centroïde : ({cX}, {cY})")
         height, width = img.shape[:2]
         dY = height - cY
         if dY >= 3/4 * height:
