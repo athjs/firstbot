@@ -84,7 +84,7 @@ def direct_kinematics(Vd, Vg, R=WHEEL_RADIUS, W=WHEEL_BASE):
     return v, w
 
 
-def inverse_kinematics(v, w, R=WHEEL_RADIUS, W=WHEEL_BASE):
+def inverse_kinematics(v, w = 0.8, R=WHEEL_RADIUS, W=WHEEL_BASE):
     v_r = v + (w * W) / 2.0
     v_l = v - (w * W) / 2.0
     Vd = v_r / R
@@ -108,9 +108,6 @@ def go_to(
     x=0.0,
     y=0.0,
     theta=0.0,
-    dt=0.1,
-    tol_pos=0.01,
-    tol_theta=0.05,
 ):
     """
     Fait aller le robot de (x,y,theta) vers (x_target, y_target, theta_target)
@@ -130,49 +127,35 @@ def go_to(
 
     # orientation finale absolue (relative à theta initial)
     theta_goal = theta_target
+    w = 0.8
     try:
-        while True:
-            # vecteur vers la cible
-            x_rest = x_target - x
-            y_rest = y_target - y
-            dist_rest = math.hypot(x_rest, y_rest)
+        # vecteur vers la cible
 
-            # angle relatif vers la cible
-            alpha = math.atan2(y_rest, x_rest)
+        x_rest = x_target - x
+        y_rest = y_target - y
+        dist_rest = math.hypot(x_rest, y_rest)
 
-            # erreur d'orientation
-            # dtheta = theta_goal - theta
+        # angle relatif vers la cible
+        alpha = math.atan2(y_rest, x_rest)
 
-            # condition d’arrêt
-            if dist_rest < tol_pos :
-                #and abs(dtheta) < tol_theta:
-                break
+        # erreur d'orientation
+        # dtheta = theta_goal - theta
 
-            # commande vitesse (v, w)
-            v, w = point_direction(alpha)
+        # cinématique inverse
+        Vd, Vg = inverse_kinematics(0)
+        dt = alpha/w
+        # conversion Dynamixel
+        speed_d = rad_s_to_dxl_speed(Vd)
+        speed_g = rad_s_to_dxl_speed(Vg)
 
-            # ralentissement quand proche
-            if dist_rest < 0.2:
-                v *= dist_rest / 0.2
-
-            # cinématique inverse
-            Vd, Vg = inverse_kinematics(v, w)
-
-            # conversion Dynamixel
-            speed_d = rad_s_to_dxl_speed(Vd)
-            speed_g = rad_s_to_dxl_speed(Vg)
-
-            # appliquer aux moteurs
-            dxl_io.set_moving_speed({1: -speed_d, 2: speed_g})  # roue droite  # roue gauche
-
-            # vitesses réelles
-            Vd_real, Vg_real = dxl_io.get_present_speed({1, 2})
-
-            # mise à jour odométrie
-            v_real, w_real = direct_kinematics(Vd_real, Vg_real)
-            x, y, theta = tick_odom(x, y, theta, v_real, w_real, dt)
-
-            path.append((x, y, theta))
+        # appliquer aux moteurs
+        init = time.time()
+        current = time.time()   
+        dxl_io.set_moving_speed({1: -speed_d, 2: speed_g})  # roue droite  # roue gauche
+        while(current-init<dt):
+            current = time.time()   
+        dxl_io.set_moving_speed({1: 0, 2: 0})
+        # path.append((x, y, theta))
     finally: 
         dxl_io.set_moving_speed({1: 0, 2: 0})
     # arrêt moteur
@@ -220,4 +203,4 @@ def odometry(x=0.0, y=0.0, theta=0.0, dt=0.1, duration=10.0):
     return x, y, theta, path
 
 
-go_to(2, 0, 0)
+go_to(-1, 0, 0)
