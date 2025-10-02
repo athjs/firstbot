@@ -7,6 +7,7 @@ import tty
 import termios
 import math
 from camera import detect_lines_by_color
+from camera import detect_lines_brown
 from camera import Color
 
 # --- paramètres robot ---
@@ -78,6 +79,7 @@ dxl_io = pypot.dynamixel.DxlIO(ports[0])
 dxl_io.set_wheel_mode([1, 2])   # active wheel mode sur les deux
 
 last_angle = 0
+color_choice = Color.Yellow
 
 try:
     while True:
@@ -86,8 +88,13 @@ try:
             print("Can't receive frame (stream end?). Exiting ...")
             break
 
+        #détection du marron pour changement de couleur 
+        brown_presence = detect_lines_brown(frame)
+        if brown_presence :
+            color_choice += 1
+
         # détection ligne -> [dX, dY, angle]
-        result = detect_lines_by_color(frame, Color.Blue, last_angle)
+        result = detect_lines_by_color(frame, color_choice, last_angle)
         if result is None:
             continue
         dX, dY, angle = result

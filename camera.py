@@ -74,3 +74,32 @@ def detect_lines_by_color(img, color, last_angle):
 
     # print(angle*180/math.pi)
     return [dX, dY, angle]
+
+
+def detect_lines_brown(img):
+    # Conversion de l'image en espace de couleur HSV
+    hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+
+    lower_marron = np.array([115, 5, 70])  # H, S, V min
+    upper_marron = np.array([150, 40, 150])  # H, S, V max
+    marron_mask = cv.inRange(hsv, lower_marron, upper_marron)
+
+    # Appliquer le masque à l'image originale
+    result = cv.bitwise_and(img, img, mask=marron_mask)
+
+    # Calcul du centroïde
+    M = cv.moments(marron_mask)  # moments géométriques
+    if M["m00"] >= 40000:
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])
+        print(f"Centroïde : ({cX}, {cY})")
+        height, width = img.shape[:2]
+        dY = height - cY
+        if dY >= 3/4 * height:
+            return True
+        else :
+            return False
+
+    else:
+        print("Aucun pixel détecté pour calculer le centroïde.")
+        return False
