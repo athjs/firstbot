@@ -11,6 +11,7 @@ from camera import detect_lines_brown
 from camera import Color
 from kynematic import *
 from time import sleep
+from odometry import *
 
 
 def test_inversekinematics(): 
@@ -71,4 +72,8 @@ def test_directkinematics():
 
 
 
-test_directkinematics()
+def test_go_to(): 
+    x, y, theta, path = go_to(25, 50, 0.5)
+    print(x,y, theta, path)
+
+test_go_to()
