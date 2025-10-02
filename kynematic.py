@@ -1,7 +1,7 @@
 # --- paramètres robot ---
 WHEEL_RADIUS = 0.025   # m (rayon roue = 2.5 cm)
 WHEEL_BASE   = 0.185   # m (distance entre roues = 18.5 cm)
-MAX_V = 0.25           # m/s (avance max)
+MAX_V = 0.25          # m/s (avance max)
 MAX_W = 3.0            # rad/s (rotation max)
 
 # --- Fonctions cinématiques ---

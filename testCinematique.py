@@ -42,7 +42,7 @@ dxl_io.set_wheel_mode([1, 2])   # active wheel mode sur les deux
 
 # init des variables de la boucle
 last_angle = 0
-color_choice = Color.Yellow
+color_choice = Color.Blue
 color_code = ANSI_CODE[color_choice]
 try:
     last_brown_detection_time = time.time() 
@@ -77,12 +77,12 @@ try:
         
         if color_choice == Color.Red :
             v_base = 0.1
-            ka = 1.4
+            ka = 1.3
         elif color_choice == Color.Blue :
-            v_base = 0.20
-            ka = 1.2
+            v_base = 0.18
+            ka = 1
         else: 
-            v_base = 0.25
+            v_base = 0.23
             ka = 0.8
 
         # génération commande (v, w) à partir de l’angle
