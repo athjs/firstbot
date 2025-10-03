@@ -7,31 +7,6 @@ from matplotlib import pyplot as plt
 
 WHEEL_RADIUS = 0.025   # usi (m)
 WHEEL_BASE   = 0.185   # usi (m)
-def dxl_speed_to_rad_s(value):
-    if value == 0 or value == 1024: 
-        return 0.0
-
-    if value < 1024:  # CCW
-        rpm = value * 0.916
-        rad_s = (rpm * 2 * math.pi) / 60.0
-        return rad_s
-    else:  # CW
-        value = value - 1024
-        rpm = value * 0.916
-        rad_s = (rpm * 2 * math.pi) / 60.0
-        return -rad_s
-
-def rad_s_to_dxl_speed(rad_s, max_dxl=1023):
-    rpm = abs(rad_s) * 60.0 / (2 * math.pi)
-    value = int(rpm / 0.916)
-
-    if value > max_dxl:
-        value = max_dxl
-
-    if rad_s >= 0:  # CCW
-        return value
-    else:  # CW
-        return 1024 + value
     
 def odom(v, w, dt):
     if abs(w) < 1e-3:  # Cas rectiligne
@@ -102,8 +77,8 @@ def go_to(
         Vd, Vg = inverse_kinematics(0,w)
         Vd = - Vd
         rotation_duration = np.abs(alpha/Vd)
-        speed_d = rad_s_to_dxl_speed(Vd)
-        speed_g = rad_s_to_dxl_speed(Vg)
+        speed_d = Vd
+        speed_g = Vg
         init = time.time()
         dxl_io.set_moving_speed({1: -speed_d, 2: speed_g})  # roue droite  # roue gauche
         while(time.time() - init < rotation_duration):
@@ -111,8 +86,8 @@ def go_to(
         dxl_io.set_moving_speed({1: 0, 2: 0})
         Vd, Vg = inverse_kinematics(v,0)
         dt = dist_rest/(Vg*WHEEL_RADIUS)
-        speed_d = rad_s_to_dxl_speed(Vd)
-        speed_g = rad_s_to_dxl_speed(Vg)
+        speed_d = Vd
+        speed_g = Vg
         init = time.time()
         dxl_io.set_moving_speed({1: -speed_d, 2: speed_g})  # roue droite  # roue gauche
         while(time.time() - init < dt):
@@ -122,8 +97,8 @@ def go_to(
         Vd, Vg = inverse_kinematics(0,w)
         Vd = - Vd
         rotation_duration = np.abs(theta_target/Vd)
-        speed_d = rad_s_to_dxl_speed(Vd)
-        speed_g = rad_s_to_dxl_speed(Vg)
+        speed_d = Vd
+        speed_g =Vg
         init = time.time()
         dxl_io.set_moving_speed({1: speed_d, 2: speed_g})  # roue droite  # roue gauche
         while(time.time() - init < rotation_duration):
@@ -167,8 +142,8 @@ def go_to_asservi(x_target, y_target, theta_target,
 
         # Convertir en vitesses moteurs
         Vd, Vg = inverse_kinematics(v_cmd, w_cmd)
-        dxl_io.set_moving_speed({1: rad_s_to_dxl_speed(-Vd),
-                                 2: rad_s_to_dxl_speed(Vg)})
+        dxl_io.set_moving_speed({1: -Vd,
+                                 2: Vg})
 
         # Mise à jour position via odométrie
         curr_pos_deg = dxl_io.get_present_position([1, 2])
