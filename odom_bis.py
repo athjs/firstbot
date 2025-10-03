@@ -134,6 +134,47 @@ def go_to(
     dxl_io.set_moving_speed({1: 0, 2: 0})
     return
 
+def go_to_asservi(x_target, y_target, theta_target,
+          v=0.1, w=0.2, dt=0.05, tol_dist=0.02, tol_angle=0.05):
+
+    # Initialisation Dynamixel
+    ports = pypot.dynamixel.get_available_ports()
+    if not ports:
+        exit("No Dynamixel port found")
+    dxl_io = pypot.dynamixel.DxlIO(ports[0])
+    dxl_io.set_wheel_mode([1, 2])
+
+    # Position initiale robot
+    x, y, theta = 0.0, 0.0, 0.0
+
+    # Tant qu’on n’est pas à destination
+    while True:
+        # Calcul erreur
+        dx = x_target - x
+        dy = y_target - y
+        dist = math.hypot(dx, dy)
+        angle_to_goal = math.atan2(dy, dx)
+        err_theta = _wrap_to_pi(angle_to_goal - theta)
+
+        # Si proche de la cible -> arrêt
+        if dist < tol_dist and abs(_wrap_to_pi(theta - theta_target)) < tol_angle:
+            break
+
+        # Simple contrôle proportionnel
+        v_cmd = v * min(1.0, dist)        # avance proportionnelle à la distance
+        w_cmd = 2.0 * err_theta           # rotation proportionnelle à l’angle
+
+        # Convertir en vitesses moteurs
+        Vd, Vg = inverse_kinematics(v_cmd, w_cmd)
+        dxl_io.set_moving_speed({1: rad_s_to_dxl_speed(-Vd),
+                                 2: rad_s_to_dxl_speed(Vg)})
+
+        # Mise à jour position via odométrie
+        x, y, theta, _ = odometry(x, y, theta, dt, duration=dt)
+
+    # Stop
+    dxl_io.set_moving_speed({1: 0, 2: 0})
+
 def _wrap_to_pi(a):
     return (a + math.pi) % (2*math.pi) - math.pi
 
