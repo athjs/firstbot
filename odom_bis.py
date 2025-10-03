@@ -199,10 +199,10 @@ def go_to(
 def _wrap_to_pi(a):
     return (a + math.pi) % (2*math.pi) - math.pi
 
-def odometry(x=0.0, y=0.0, theta=0.0, dt=0.01, duration=200.0):
+def odometry(x=0.0, y=0.0, theta=0.0, dt=0.01, duration=20):
     path = []
 
-    # --- initialisation Dynamixel ---
+    # init dynamixel
     ports = pypot.dynamixel.get_available_ports()
     if not ports:
         exit("No Dynamixel port found")
@@ -260,16 +260,7 @@ def odometry(x=0.0, y=0.0, theta=0.0, dt=0.01, duration=200.0):
 
 x , y , theta, path = odometry()
 
-def plot_path(path, filename="trajet.png", show_orientations=True, step=10):
-    """
-    Trace le trajet (x,y) issu d'une liste path = [(x, y, theta), ...]
-    et enregistre la figure dans le fichier `filename` (dans le répertoire courant).
-
-    - path : liste de tuples (x, y, theta)
-    - filename : nom du fichier de sortie (ex: 'trajet.png')
-    - show_orientations : affiche quelques flèches orientées selon theta
-    - step : une flèche toutes les `step` poses
-    """
+def plot_path(path, filename="trajet3.png", show_orientations=True, step=10):
     if not path:
         raise ValueError("Le path est vide.")
 
