@@ -146,6 +146,7 @@ def go_to_asservi(x_target, y_target, theta_target,
 
     # Position initiale robot
     x, y, theta = 0.0, 0.0, 0.0
+    cum_pos = [0.0, 0.0]
 
     # Tant qu’on n’est pas à destination
     while True:
@@ -170,7 +171,18 @@ def go_to_asservi(x_target, y_target, theta_target,
                                  2: rad_s_to_dxl_speed(Vg)})
 
         # Mise à jour position via odométrie
-        x, y, theta, _ = odometry(x, y, theta, dt, duration=dt)
+        curr_pos_deg = dxl_io.get_present_position([1, 2])
+        curr_pos = [math.radians(p) for p in curr_pos_deg]
+        d_right = _wrap_to_pi(curr_pos[0] - prev_pos[0]) #wrap to pi pour éviter le saut de pi à -pi
+        d_left  = _wrap_to_pi(curr_pos[1] - prev_pos[1])
+        cum_pos[0] += d_right
+        cum_pos[1] += d_left
+        Vd_real = d_right / dt # on dérive et on a la vitesse
+        Vg_real = d_left  / dt
+        Vd_real = -Vd_real
+        prev_pos = curr_pos
+        v_real, w_real = direct_kinematics(Vd_real, Vg_real)
+        x, y, theta = tick_odom(x, y, theta, v_real, w_real, dt)
 
     # Stop
     dxl_io.set_moving_speed({1: 0, 2: 0})
