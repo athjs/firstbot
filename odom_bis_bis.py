@@ -14,8 +14,8 @@ WHEEL_BASE   = 0.185   # m
 WHEEL_SIGN = {1: -1, 2: +1}
 
 # Vitesses de commande (plus rapide qu'avant)
-V_LIN  = 2   # m/s  (translation)
-W_TURN = 5.00   # rad/s (rotation sur place)
+V_LIN  = 1.5   # m/s  (translation)
+W_TURN = 2 * np.pi   # rad/s (rotation sur place)
 
 # ===============================
 # Conversions Dynamixel

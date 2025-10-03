@@ -47,8 +47,7 @@ def rad_s_to_dxl_speed(rad_s, max_dxl=1023):
         return value
     else:  # CW
         return 1024 + value
-
-
+    
 # -------------------------------
 # Odométrie
 # -------------------------------
@@ -112,6 +111,10 @@ def go_to(
     """
 
     path = []
+    
+    print( "x :", x_target, 
+            "y :", y_target, 
+            "z : ", theta_target)
 
     # --- initialisation Dynamixel ---
     ports = pypot.dynamixel.get_available_ports()
@@ -120,9 +123,9 @@ def go_to(
     dxl_io = pypot.dynamixel.DxlIO(ports[0])
     dxl_io.set_wheel_mode([1, 2])
 
-    # orientation finale absolue (relative à theta initial)
-    w = 1
-    v = 1
+    
+    w = 0.2
+    v = 0.2
     try:
         print("cesar")
         # vecteur vers la cible
@@ -130,20 +133,25 @@ def go_to(
         x_rest = x_target 
         y_rest = y_target 
         dist_rest = math.hypot(x_rest, y_rest)
-
+        print("distance de l'hypothénuse :", dist_rest)
 
         # angle relatif vers la cible
         alpha = math.atan2(y_rest, x_rest)
-        print(alpha)
+        print("angle relatif vers la cible :", alpha)
         # erreur d'orientation
         # dtheta = theta_goal - theta
         # cinématique inverse
         Vd, Vg = inverse_kinematics(0,w)
-        rotation_duration = np.abs(alpha/w)
+        Vd = - Vd
+        
+        print("Vd :", Vd, "Vg :", Vg)
+        rotation_duration = np.abs(alpha/Vd)
+        
+        print("Je dois tourner pendant: ", rotation_duration, "s")
         # conversion Dynamixel
         speed_d = rad_s_to_dxl_speed(Vd)
         speed_g = rad_s_to_dxl_speed(Vg)
-        print(Vd,Vg)
+        print("speed_d : ", speed_d, "speed_g :", speed_g)
         # appliquer aux moteurs
         init = time.time()
 
@@ -154,11 +162,16 @@ def go_to(
         dxl_io.set_moving_speed({1: 0, 2: 0})
         # path.append((x, y, theta))
         # conversion Dynamixel
+        
+        # calculs vitesses pour aller tout droit
         Vd, Vg = inverse_kinematics(v,0)
-        print(Vd,Vg)
-        dt = dist_rest/(Vg*WHEEL_RADIUS)
+        print("Vitesses tout droit, Vd : ", Vd, " Vg :",Vg)
+        dt = dist_rest/(Vg*WHEEL_RADIUS*2*np.pi)
+        
+        print("temps qu'il faut avancer tout droit :", dt, "s")
         speed_d = rad_s_to_dxl_speed(Vd)
         speed_g = rad_s_to_dxl_speed(Vg)
+        print("speed_d : ", speed_d, "speed_g :", speed_g)
         init = time.time()
         dxl_io.set_moving_speed({1: -speed_d, 2: speed_g})  # roue droite  # roue gauche
         while(time.time() - init < dt):
@@ -166,19 +179,25 @@ def go_to(
         dxl_io.set_moving_speed({1: 0, 2: 0})
                 # path.append((x, y, theta))
         theta_target = theta_target-alpha
+        print("angle restant pour se mettre dans l'orientation  cible : ", theta_target)
         # erreur d'orientation
         # dtheta = theta_goal - theta
         # cinématique inverse
         Vd, Vg = inverse_kinematics(0,w)
-        rotation_duration = np.abs(theta_target/w)
+        Vd = - Vd
+        print("Vitesses des roues pour tourner, Vd : ", Vd, " Vg :",Vg)
+        rotation_duration = np.abs(theta_target/Vd)
+        print("temps de rotation : ", rotation_duration)
         # conversion Dynamixel
         speed_d = rad_s_to_dxl_speed(Vd)
         speed_g = rad_s_to_dxl_speed(Vg)
-        if theta_target-alpha<0: 
-            w = -w
+        print("speed_d : ", speed_d, "speed_g :", speed_g)
+        print("to radians d :", dxl_speed_to_rad_s(speed_d),"to radians g :",dxl_speed_to_rad_s(speed_g) )
+        #if theta_target-alpha<0: 
+            #w = -w
         # appliquer aux moteurs
         init = time.time()
-        dxl_io.set_moving_speed({1: -speed_d, 2: speed_g})  # roue droite  # roue gauche
+        dxl_io.set_moving_speed({1: speed_d, 2: speed_g})  # roue droite  # roue gauche
         while(time.time() - init < rotation_duration):
             continue
         dxl_io.set_moving_speed({1: 0, 2: 0})
@@ -229,5 +248,10 @@ def odometry(x=0.0, y=0.0, theta=0.0, dt=0.1, duration=10.0):
 
     return x, y, theta, path
 
+go_to(1.0,0,0)
 
-print(odometry())
+
+
+
+    
+    

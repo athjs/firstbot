@@ -1,10 +1,10 @@
-# --- paramètres robot ---
+#  paramètres robot 
 WHEEL_RADIUS = 0.025   # m (rayon roue = 2.5 cm)
 WHEEL_BASE   = 0.185   # m (distance entre roues = 18.5 cm)
 MAX_V = 0.25          # m/s (avance max)
 MAX_W = 3.0            # rad/s (rotation max)
 
-# --- Fonctions cinématiques ---
+# Fonctions cinématiques 
 def direct_kinematics(Vd, Vg, R=WHEEL_RADIUS, W=WHEEL_BASE):
     """
     Vd, Vg : vitesses roues (rad/s)
@@ -27,6 +27,7 @@ def inverse_kinematics(v, w, R=WHEEL_RADIUS, W=WHEEL_BASE):
     Vg = v_l / R
     #print("Vitesse moteur gauches et droit",Vd,Vg)
     return Vd,Vg
+
 def point_direction(alpha, v_base=0.15, ka=0.8, max_v=MAX_V, max_w=MAX_W):
     """
     alpha : angle (rad) entre -pi/2 et pi/2

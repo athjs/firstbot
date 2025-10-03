@@ -89,7 +89,7 @@ def detect_lines_by_color(img, color, last_angle):
         if M["m00"] != 0:
             cX = int(M["m10"] / M["m00"])
             cY = int(M["m01"] / M["m00"])
-            print(f"Centroïde : ({cX}, {cY})")
+            #print(f"Centroïde : ({cX}, {cY})")
         
     if (cX, cY) != (None, None): 
         height, width = img.shape[:2]
