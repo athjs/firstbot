@@ -166,7 +166,7 @@ def go_to(
         # calculs vitesses pour aller tout droit
         Vd, Vg = inverse_kinematics(v,0)
         print("Vitesses tout droit, Vd : ", Vd, " Vg :",Vg)
-        dt = dist_rest/(Vg*WHEEL_RADIUS*2*np.pi)
+        dt = dist_rest/(Vg*WHEEL_RADIUS)
         
         print("temps qu'il faut avancer tout droit :", dt, "s")
         speed_d = rad_s_to_dxl_speed(Vd)
@@ -208,18 +208,10 @@ def go_to(
 
     return
 
+def _wrap_to_pi(a):
+    return (a + math.pi) % (2*math.pi) - math.pi
 
 def odometry(x=0.0, y=0.0, theta=0.0, dt=0.1, duration=10.0):
-    """
-    Mesure la position finale du robot en utilisant l’odométrie,
-    en le déplaçant à la main (moteurs en roue libre).
-
-    - (x, y, theta) : position initiale
-    - dt : pas de temps pour mise à jour
-    - duration : temps total d’échantillonnage (s)
-
-    Retourne : (x, y, theta, path)
-    """
     path = []
 
     # --- initialisation Dynamixel ---
@@ -227,28 +219,63 @@ def odometry(x=0.0, y=0.0, theta=0.0, dt=0.1, duration=10.0):
     if not ports:
         exit("No Dynamixel port found")
     dxl_io = pypot.dynamixel.DxlIO(ports[0])
-    dxl_io.set_wheel_mode([1, 2])  # mode roue (free wheeling si pas de commande)
+    dxl_io.set_wheel_mode([1, 2])  # mode roue libre
+
+    # positions initiales (en radians) : référence pour l’unwrapping
+    prev_pos_deg = dxl_io.get_present_position([1, 2])  # degrés
+    prev_pos = [math.radians(p) for p in prev_pos_deg]  # rad
+
+    # positions cumulées CONTINUES, initialisées à 0
+    cum_pos = [0.0, 0.0]  # [droit, gauche] si ton ordre est [1,2]
 
     t = 0.0
     print("trajet démarré")
-    while t < duration:
-        # lire vitesses roues en rad/s
-        Vd_real, Vg_real = dxl_io.get_present_speed([1, 2])
 
-        # convertir en (v, w)
+    while t < duration:
+        # lire nouvelle position (rad, bornée [-pi, pi] après conversion)
+        curr_pos_deg = dxl_io.get_present_position([1, 2])
+        curr_pos = [math.radians(p) for p in curr_pos_deg]
+
+        # delta corrigé du wrap pour chaque roue
+        d_right = _wrap_to_pi(curr_pos[0] - prev_pos[0])
+        d_left  = _wrap_to_pi(curr_pos[1] - prev_pos[1])
+
+        # mettre à jour positions cumulées (continues, partant de 0)
+        cum_pos[0] += d_right
+        cum_pos[1] += d_left
+
+        # vitesses angulaires (rad/s) à partir des deltas corrigés
+        Vd_real = d_right / dt
+        Vg_real = d_left  / dt
+
+        # si ta cinématique attend Vd inversé, on garde ta inversion
+        Vd_real = -Vd_real
+
+        # mise à jour du "prev" pour la prochaine itération
+        prev_pos = curr_pos
+
+        # convertir en (v, w) via ta cinématique directe existante
         v_real, w_real = direct_kinematics(Vd_real, Vg_real)
 
-        # mise à jour odométrie
+        # intégrer l’odométrie
         x, y, theta = tick_odom(x, y, theta, v_real, w_real, dt)
 
         path.append((x, y, theta))
+
+        # (optionnel) debug : imprimer la position cumulée continue
+        # print(f"cum_right={cum_pos[0]:.3f}, cum_left={cum_pos[1]:.3f}")
 
         time.sleep(dt)
         t += dt
 
     return x, y, theta, path
 
-go_to(1.0,0,0)
+
+x , y , theta, path = odometry()
+
+print("x:", x,"y:",y, "theta : ",theta)
+
+
 
 
 
