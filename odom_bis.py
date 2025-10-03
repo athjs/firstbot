@@ -146,25 +146,24 @@ def odometry(x=0.0, y=0.0, theta=0.0, dt=0.01, duration=20):
     dxl_io.set_wheel_mode([1, 2])  # mode roue libre
     prev_pos_deg = dxl_io.get_present_position([1, 2])  # degrés
     prev_pos = [math.radians(p) for p in prev_pos_deg]  # rad
-    cum_pos = [0.0, 0.0]  # [droit, gauche] si ton ordre est [1,2]
+    cum_pos = [0.0, 0.0]  # position cumulée, faire le dessin avec la dérivée pour comprendre
     t = 0.0
     print("trajet démarré")
     while t < duration:
         curr_pos_deg = dxl_io.get_present_position([1, 2])
         curr_pos = [math.radians(p) for p in curr_pos_deg]
-        d_right = _wrap_to_pi(curr_pos[0] - prev_pos[0])
+        d_right = _wrap_to_pi(curr_pos[0] - prev_pos[0]) #wrap to pi pour éviter le saut de pi à -pi
         d_left  = _wrap_to_pi(curr_pos[1] - prev_pos[1])
         cum_pos[0] += d_right
         cum_pos[1] += d_left
-        Vd_real = d_right / dt
+        Vd_real = d_right / dt # on dérive et on a la vitesse
         Vg_real = d_left  / dt
         Vd_real = -Vd_real
         prev_pos = curr_pos
         v_real, w_real = direct_kinematics(Vd_real, Vg_real)
-        x, y, theta = tick_odom(x, y, theta, v_real, w_real, dt)
+        x, y, theta = tick_odom(x, y, theta, v_real, w_real, dt) # recup la position avec kinematics
         path.append((x, y, theta))
 
-        # (optionnel) debug : imprimer la position cumulée continue
         # print(f"cum_right={cum_pos[0]:.3f}, cum_left={cum_pos[1]:.3f}")
 
         time.sleep(dt)

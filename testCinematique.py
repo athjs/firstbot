@@ -43,7 +43,7 @@ def circuit():
 
     # init des variables de la boucle
     last_angle = 0
-    color_choice = Color.Blue
+    color_choice = Color.Yellow
     color_code = ANSI_CODE[color_choice]
     try:
         last_brown_detection_time = time.time() 
