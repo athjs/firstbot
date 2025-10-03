@@ -1,25 +1,18 @@
 import math
 import numpy as np
 import pypot.dynamixel
-import kynematic as ky  # tes fonctions cinématiques
+import kynematic as ky  
 import time as time
+from matplotlib import pyplot as plt
 
-# -------------------------------
-# Paramètres robot
-# -------------------------------
-WHEEL_RADIUS = 0.025  # m (rayon roue = 2.5 cm)
-WHEEL_BASE = 0.185  # m (distance entre roues = 18.5 cm)
+# params physiques du robot
+WHEEL_RADIUS = 0.025   # usi (m)
+WHEEL_BASE   = 0.185   # usi (m)
 
 
-# -------------------------------
-# Conversion vitesses Dynamixel
-# -------------------------------
+# fcts qui convertissent les rad/s en unités dynamixel et vice-versa
 def dxl_speed_to_rad_s(value):
-    """
-    Convertit la valeur brute Dynamixel (get_present_speed)
-    en rad/s. (positif = CCW, négatif = CW)
-    """
-    if value == 0 or value == 1024:  # stop
+    if value == 0 or value == 1024: 
         return 0.0
 
     if value < 1024:  # CCW
@@ -34,9 +27,6 @@ def dxl_speed_to_rad_s(value):
 
 
 def rad_s_to_dxl_speed(rad_s, max_dxl=1023):
-    """
-    Conversion rad/s -> unité Dynamixel (0–2047).
-    """
     rpm = abs(rad_s) * 60.0 / (2 * math.pi)
     value = int(rpm / 0.916)
 
@@ -48,9 +38,7 @@ def rad_s_to_dxl_speed(rad_s, max_dxl=1023):
     else:  # CW
         return 1024 + value
     
-# -------------------------------
-# Odométrie
-# -------------------------------
+# odométrie
 def odom(v, w, dt):
     if abs(w) < 1e-3:  # Cas rectiligne
         dx = v * dt
@@ -211,7 +199,7 @@ def go_to(
 def _wrap_to_pi(a):
     return (a + math.pi) % (2*math.pi) - math.pi
 
-def odometry(x=0.0, y=0.0, theta=0.0, dt=0.1, duration=10.0):
+def odometry(x=0.0, y=0.0, theta=0.0, dt=0.01, duration=200.0):
     path = []
 
     # --- initialisation Dynamixel ---
@@ -270,15 +258,54 @@ def odometry(x=0.0, y=0.0, theta=0.0, dt=0.1, duration=10.0):
 
     return x, y, theta, path
 
-
 x , y , theta, path = odometry()
 
-print("x:", x,"y:",y, "theta : ",theta)
+def plot_path(path, filename="trajet.png", show_orientations=True, step=10):
+    """
+    Trace le trajet (x,y) issu d'une liste path = [(x, y, theta), ...]
+    et enregistre la figure dans le fichier `filename` (dans le répertoire courant).
 
+    - path : liste de tuples (x, y, theta)
+    - filename : nom du fichier de sortie (ex: 'trajet.png')
+    - show_orientations : affiche quelques flèches orientées selon theta
+    - step : une flèche toutes les `step` poses
+    """
+    if not path:
+        raise ValueError("Le path est vide.")
 
+    xs = [p[0] for p in path]
+    ys = [p[1] for p in path]
+    thetas = [p[2] for p in path]
 
+    fig, ax = plt.subplots(figsize=(6, 6))
 
+    # Trajectoire
+    ax.plot(xs, ys, linewidth=2, label="Trajet")
 
+    # Départ / Arrivée
+    ax.scatter(xs[0], ys[0], marker="o", s=60, label="Départ")
+    ax.scatter(xs[-1], ys[-1], marker="x", s=80, label="Arrivée")
 
+    # Flèches d'orientation
+    if show_orientations and len(path) > 1:
+        idx = np.arange(0, len(path), max(1, int(step)))
+        u = np.cos(np.array(thetas)[idx])
+        v = np.sin(np.array(thetas)[idx])
+        ax.quiver(np.array(xs)[idx], np.array(ys)[idx], u, v,
+                  angles='xy', scale_units='xy', scale=5, width=0.003, alpha=0.6)
+
+    ax.set_aspect('equal', adjustable='box')
+    ax.set_xlabel("x [m]")
+    ax.set_ylabel("y [m]")
+    ax.set_title("Trajet odométrie")
+    ax.grid(True, linestyle="--", alpha=0.4)
+    ax.legend(loc="best")
+
+    fig.tight_layout()
+    fig.savefig(filename, dpi=200)
+    plt.close(fig) 
+    return filename
+
+plot_path(path)
     
     
